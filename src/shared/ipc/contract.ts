@@ -36,6 +36,8 @@ const ScopeInput = z
     currentPage: z.int().min(1).max(MAX_PAGE_COUNT),
     pageCount: z.int().min(1).max(MAX_PAGE_COUNT),
     selection: ScopeSelection.nullable(),
+    // 기준 쪽에 쓸 만한 글자가 없어 쪽 전체를 이미지로 보낼지. 글자는 렌더러의 pdf.js만 읽을 수 있다.
+    pageImage: z.boolean().optional(),
   })
   .refine(
     ({ currentPage, pageCount, selection }) =>
@@ -51,6 +53,8 @@ const SendScope = z.strictObject({
   selection: ScopeSelection.nullable(),
   previousTurns: z.int().min(0),
   corrections: z.int().min(0),
+  // 기준 쪽 전체를 이미지로 보내는지. 범위 표시에 그대로 나온다.
+  pageImage: z.boolean().optional(),
   // 'fake'는 개발·E2E 전용이다. 패키징된 앱은 항상 실제 제공사를 쓴다.
   provider: z.enum(['fake', 'openai', 'postech']),
 });
@@ -73,6 +77,12 @@ const TutorContext = z.strictObject({
     .max(AREA_IMAGE_MAX_LENGTH)
     .regex(/^data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+$/)
     .nullable(),
+  pageImage: z
+    .string()
+    .max(AREA_IMAGE_MAX_LENGTH)
+    .regex(/^data:image\/(?:png|jpeg);base64,[A-Za-z0-9+/=]+$/)
+    .nullable()
+    .optional(),
 });
 export type TutorContext = z.infer<typeof TutorContext>;
 

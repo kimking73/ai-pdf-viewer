@@ -8,6 +8,7 @@ export interface ScopeMaterial {
   currentPage: number;
   pageCount: number;
   selection: ScopeSelection | null;
+  pageImage?: boolean | undefined;
 }
 
 export function resolveSendScope(
@@ -26,15 +27,19 @@ export function resolveSendScope(
     selection,
     previousTurns: Math.min(turns, MAX_PREVIOUS_TURNS),
     corrections,
+    // 영역을 골랐으면 그 영역만 보낸다. 쪽 이미지는 고른 것이 없을 때만 쓴다.
+    ...(material.pageImage === true && selection === null ? { pageImage: true } : {}),
     provider,
   };
 }
 
 // 렌더러가 보낸 내용 중 확정된 범위에 맞는 것만 남긴다. 범위 표시와 실제 전송이 어긋나지 않게 한다.
 export function fitContextToScope(context: TutorContext, scope: SendScope): TutorContext {
+  const pageImage = scope.pageImage === true ? (context.pageImage ?? null) : null;
   return {
     pages: context.pages.filter(({ page }) => page >= scope.firstPage && page <= scope.lastPage),
     selectionText: scope.selection?.kind === 'text' ? context.selectionText : null,
     areaImage: scope.selection?.kind === 'area' ? context.areaImage : null,
+    ...(pageImage === null ? {} : { pageImage }),
   };
 }

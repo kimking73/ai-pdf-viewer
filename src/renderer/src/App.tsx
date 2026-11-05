@@ -95,11 +95,23 @@ export function App() {
       // 쪽이 아직 그려지지 않았으면 선택할 때 만든 썸네일을 쓴다.
       areaImage = crop === '' ? current.thumbnail : crop;
     }
+    let pageImage: string | null = null;
+    if (scope.pageImage === true) {
+      const element = controller.pageElement(scope.basePage);
+      const crop = element === null ? '' : cropArea(element, { x: 0, y: 0, width: 1, height: 1 }, AREA_IMAGE_MAX_PX);
+      pageImage = crop === '' ? null : crop;
+    }
     return {
       pages,
+      pageImage,
       selectionText: current?.kind === 'text' ? current.text.slice(0, SELECTION_TEXT_LIMIT) : null,
       areaImage: areaImage === '' ? null : areaImage,
     };
+  }, []);
+  // 글자 정보가 부족한 쪽은 쪽 전체를 이미지로 보낸다(계약 4.4절).
+  const needsPageImage = useCallback(async (page: number): Promise<boolean> => {
+    const text = await controllerRef.current?.readPageText(page).catch(() => null);
+    return text !== null && text !== undefined && classifyDocumentText([text]) !== 'normal';
   }, []);
   const tutor = useTutor({
     documentId,
@@ -108,6 +120,7 @@ export function App() {
     selection,
     readCurrentPage,
     readContext,
+    needsPageImage,
     isCopyAllowed,
     isPanelOpen,
   });

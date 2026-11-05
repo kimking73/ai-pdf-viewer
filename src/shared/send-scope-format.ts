@@ -16,6 +16,7 @@ function selectionLabel(scope: SendScope): string {
 /** 1줄: 쪽 범위, 선택 종류와 개수, 선택 쪽. */
 export function formatScopeLine(scope: SendScope): string {
   const range = formatPageRange(scope);
+  if (scope.pageImage === true) return `${range} · p.${String(scope.basePage)} 쪽 이미지`;
   if (scope.selection === null) return range;
   return `${range} · ${selectionLabel(scope)}(p.${String(scope.selection.page)})`;
 }
@@ -35,7 +36,8 @@ export function formatScopeNotice(scope: SendScope): string | null {
 
 /** 질문 아래에 고정해 두는 문구. 이 턴에서 실제로 보낸 범위를 그대로 적는다. */
 export function formatFrozenScope(scope: SendScope): string {
-  const selection = scope.selection === null ? '' : ` · ${selectionLabel(scope)}`;
+  const image = scope.pageImage === true ? ` · p.${String(scope.basePage)} 쪽 이미지` : '';
+  const selection = scope.selection === null ? image : ` · ${selectionLabel(scope)}`;
   const sent = scope.provider === 'fake' ? '전송 안 함(가짜 응답)' : `${providerName(scope.provider)}로 전송`;
   return `확정 범위: ${formatPageRange(scope)}${selection} · ${sent}`;
 }

@@ -94,7 +94,10 @@ export function ScopeSummary({ id, scope, selection, hasKey, registerEscape }: S
       </div>
       {open && (
         <div className="scope-details" role="dialog" aria-label="보낼 범위 자세히" data-testid="scope-details">
-          <p>쪽: {formatPageRange(scope)}. 쪽은 글자로 보내고, 선택 영역은 이미지로 보냅니다.</p>
+          <p>
+            쪽: {formatPageRange(scope)}. 쪽은 글자로 보내고, 선택 영역은 이미지로 보냅니다.
+            {scope.pageImage === true && ` p.${String(scope.basePage)}은 글자 정보가 부족해 쪽 전체를 이미지로 함께 보냅니다.`}
+          </p>
           {selection !== null && (
             <p className="scope-preview">
               선택 미리보기: {selection.kind === 'text' ? selection.text : `p.${String(selection.page)}의 선택 영역`}

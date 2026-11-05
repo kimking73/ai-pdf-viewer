@@ -79,8 +79,9 @@ export class PostechProvider implements TutorProvider {
     const apiKey = await this.options.loadApiKey();
     if (apiKey === null) throw new AiError('invalid-key');
 
-    const { areaImage } = request.context;
-    const files = areaImage === null ? [] : [{ id: 'selected-area', name: 'selected-area.png', url: areaImage }];
+    const { areaImage, pageImage } = request.context;
+    const image = areaImage ?? pageImage ?? null;
+    const files = image === null ? [] : [{ id: 'selected-area', name: 'selected-area.png', url: image }];
     const timeout = AbortSignal.timeout(this.timeoutMs);
     let message: string;
     try {

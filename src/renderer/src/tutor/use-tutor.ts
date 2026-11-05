@@ -12,13 +12,15 @@ interface TutorInput {
   readCurrentPage: () => number | null;
   /** 확정된 범위에 맞춰 실제로 보낼 내용을 모은다. */
   readContext: (scope: SendScope) => Promise<TutorContext>;
+  /** 이 쪽의 글자 정보가 부족해 쪽 전체를 이미지로 보내야 하는지. */
+  needsPageImage: (page: number) => Promise<boolean>;
   isCopyAllowed: () => boolean;
   /** 패널이 접혀 있을 때 끝난 답변을 '새 답변 있음'으로 표시한다. */
   isPanelOpen: () => boolean;
 }
 
 // 대화 상태와 메인과의 왕복. 전송 범위는 렌더러가 계산하지 않고 메인이 돌려준 값만 쓴다.
-export function useTutor({ documentId, currentPage, pageCount, selection, readCurrentPage, readContext, isCopyAllowed, isPanelOpen }: TutorInput) {
+export function useTutor({ documentId, currentPage, pageCount, selection, readCurrentPage, readContext, needsPageImage, isCopyAllowed, isPanelOpen }: TutorInput) {
   const [turns, dispatch] = useReducer(conversationReducer, []);
   const [scope, setScope] = useState<SendScope | null>(null);
   const [failed, setFailed] = useState(false);
@@ -27,6 +29,8 @@ export function useTutor({ documentId, currentPage, pageCount, selection, readCu
   const [provider, setProvider] = useState<SendScope['provider']>('openai');
   // 키 없이 보내려 했을 때 입력창 위에 안내를 띄운다(계약 4.5절).
   const [noKey, setNoKey] = useState(false);
+  // 범위 표시에 미리 보여 주기 위한 값. 어느 문서, 어느 쪽에 대한 답인지 함께 둔다.
+  const [imagePage, setImagePage] = useState<{ documentId: string; page: number } | null>(null);
   // 응답을 기다리는 사이의 두 번째 전송을 막는다.
   const sendingRef = useRef(false);
 
@@ -38,6 +42,7 @@ export function useTutor({ documentId, currentPage, pageCount, selection, readCu
   // 턴이 끝나거나 고친 내용이 늘면 다음 범위의 이전 대화 수가 바뀐다.
   const revision = turns.map(({ id, status }) => `${id}:${status}`).join();
 
+  const pageImage = imagePage?.documentId === documentId && imagePage.page === currentPage;
   const material = useMemo(
     () =>
       documentId === null || pageCount === 0
@@ -47,9 +52,21 @@ export function useTutor({ documentId, currentPage, pageCount, selection, readCu
             currentPage,
             pageCount,
             selection: selectionKind === null || selectionPage === null ? null : { kind: selectionKind, page: selectionPage },
+            pageImage,
           },
-    [documentId, currentPage, pageCount, selectionKind, selectionPage],
+    [documentId, currentPage, pageCount, selectionKind, selectionPage, pageImage],
   );
+
+  useEffect(() => {
+    if (documentId === null || currentPage < 1) return;
+    let cancelled = false;
+    void needsPageImage(currentPage).then((needed) => {
+      if (!cancelled) setImagePage(needed ? { documentId, page: currentPage } : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [documentId, currentPage, needsPageImage]);
 
   useEffect(
     () =>
@@ -98,13 +115,14 @@ export function useTutor({ documentId, currentPage, pageCount, selection, readCu
       setFailed(false);
       setNoKey(false);
       const page = Math.min(readCurrentPage() ?? material.currentPage, material.pageCount);
-      const input = { ...material, currentPage: page };
       const reject = (): void => {
         setFailed(true);
         onRejected();
       };
       const send = async (): Promise<void> => {
         // 범위는 메인이 정한다. 그 범위의 내용만 모아 보낸다.
+        // 표시가 따라오기 전에 쪽을 옮겼을 수 있으므로 보내는 쪽 기준으로 다시 판단한다.
+        const input = { ...material, currentPage: page, pageImage: await needsPageImage(page) };
         const resolved = await window.api.resolveSendScope(input);
         if (!resolved.ok || resolved.data.status !== 'ok') {
           reject();
@@ -130,7 +148,7 @@ export function useTutor({ documentId, currentPage, pageCount, selection, readCu
         });
       return true;
     },
-    [material, running, readCurrentPage, readContext, isCopyAllowed],
+    [material, running, readCurrentPage, readContext, needsPageImage, isCopyAllowed],
   );
 
   /** 같은 범위로 다시 받는다. 고친 내용이 있으면 그 턴을 교체한다. */

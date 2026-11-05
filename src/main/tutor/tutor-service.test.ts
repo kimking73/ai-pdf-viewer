@@ -3,7 +3,8 @@ import type { SendScope, TutorEvent } from '../../shared/ipc/contract';
 import { fakeTutorProvider } from './fake-provider';
 import type { TutorProvider } from './provider';
 import { sanitizeSource } from './provider';
-import { resolveSendScope } from './send-scope';
+import { formatFrozenScope, formatScopeLine } from '../../shared/send-scope-format';
+import { fitContextToScope, resolveSendScope } from './send-scope';
 import { TutorService } from './tutor-service';
 
 const DOC = '00000000-0000-4000-8000-000000000001';
@@ -34,6 +35,61 @@ describe('resolveSendScope', () => {
 
   it('이전 대화 수는 상한을 넘지 않는다', () => {
     expect(resolveSendScope({ currentPage: 1, pageCount: 1, selection: null }, 99, 1)).toMatchObject({ previousTurns: 4, corrections: 1 });
+  });
+});
+
+describe('쪽 이미지', () => {
+  const image = 'data:image/png;base64,AAAA';
+  const base = { currentPage: 5, pageCount: 10 };
+
+  it('고른 것이 없을 때만 범위에 들어가고, 영역을 고르면 빠진다', () => {
+    expect(resolveSendScope({ ...base, selection: null, pageImage: true }, 0, 0).pageImage).toBe(true);
+    expect(resolveSendScope({ ...base, selection: { kind: 'area', page: 5 }, pageImage: true }, 0, 0).pageImage).toBeUndefined();
+    expect(resolveSendScope({ ...base, selection: null }, 0, 0).pageImage).toBeUndefined();
+  });
+
+  it('범위에 없으면 렌더러가 보낸 이미지를 버린다', () => {
+    const scope = resolveSendScope({ ...base, selection: null }, 0, 0);
+    expect(fitContextToScope({ pages: [], selectionText: null, areaImage: null, pageImage: image }, scope).pageImage).toBeUndefined();
+  });
+
+  it('범위에 있으면 이미지를 남긴다', () => {
+    const scope = resolveSendScope({ ...base, selection: null, pageImage: true }, 0, 0);
+    expect(fitContextToScope({ pages: [], selectionText: null, areaImage: null, pageImage: image }, scope).pageImage).toBe(image);
+  });
+
+  it('범위 문구에 쪽 이미지를 적는다', () => {
+    const scope = resolveSendScope({ ...base, selection: null, pageImage: true }, 0, 0);
+    expect(formatScopeLine(scope)).toBe('p.4~6 · p.5 쪽 이미지');
+    expect(formatFrozenScope(scope)).toBe('확정 범위: p.4~6 · p.5 쪽 이미지 · OpenAI로 전송');
+  });
+
+  it('이미지를 받은 질문만 표시하고 제공사로 넘긴다', async () => {
+    const seen: (string | null | undefined)[] = [];
+    const service = new TutorService({
+      provider: {
+        stream: (request) => {
+          seen.push(request.context.pageImage);
+          return fakeTutorProvider.stream(request, new AbortController().signal);
+        },
+      },
+      getProviderId: () => 'openai',
+      hasKey: () => Promise.resolve(true),
+      isIssuedDocument: () => true,
+      send: vi.fn(),
+    });
+    const scope = { ...material, pageImage: true };
+    const missing = await service.ask({ ...newRequest, scope, context });
+    expect(missing).toMatchObject({ status: 'started' });
+    if (missing.status === 'started') {
+      expect(missing.scope.pageImage).toBeUndefined();
+      service.stop(missing.requestId);
+    }
+    await vi.waitFor(async () => {
+      const sent = await service.ask({ ...newRequest, scope, context: { ...context, pageImage: image } });
+      expect(sent).toMatchObject({ status: 'started', scope: { pageImage: true } });
+    });
+    expect(seen.at(-1)).toBe(image);
   });
 });
 

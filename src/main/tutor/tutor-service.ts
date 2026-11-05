@@ -60,8 +60,12 @@ export class TutorService {
 
     if (request.mode === 'new') {
       if (this.active !== null) return { status: 'busy' };
-      const scope = this.scopeFor(request.scope, session);
-      return this.start(session, { question: request.question, scope, context: fitContextToScope(request.context, scope) }, null);
+      const resolved = this.scopeFor(request.scope, session);
+      const context = fitContextToScope(request.context, resolved);
+      // 쪽을 이미지로 만들지 못했으면 보냈다고 표시하지 않는다.
+      const scope = { ...resolved };
+      if ((context.pageImage ?? null) === null) delete scope.pageImage;
+      return this.start(session, { question: request.question, scope, context }, null);
     }
 
     const original = session.requests.get(request.requestId);
