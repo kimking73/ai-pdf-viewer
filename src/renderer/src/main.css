@@ -1,0 +1,926 @@
+/* 렌더러 디자인 토큰의 유일한 원본. 값은 docs/design-tokens.md, 레이아웃 수치는 docs/design-contract.md 10절을 따른다.
+   hex와 rgba 값은 이 블록에만 쓴다(tokens.test.ts가 확인한다). 외부 글꼴은 쓰지 않는다.
+   다크 모드 색은 아직 확정되지 않아 라이트만 둔다(docs/design-tokens.md). */
+:root {
+  color-scheme: light;
+
+  --color-bg-app: #f5f5f7;
+  --color-bg-viewer: #f5f5f7;
+  --color-bg-panel: #ffffff;
+  --color-bg-input: #ffffff;
+  --color-bg-elevated: #fafafc;
+  --color-text-primary: #1d1d1f;
+  --color-text-secondary: #333333;
+  --color-border: #e0e0e0;
+  --color-accent: #0066cc;
+  --color-focus-ring: #0071e3;
+  --color-text-on-accent: #ffffff;
+  --color-page-selection-border: #0066cc;
+  --color-page-selection-fill: rgba(0, 102, 204, 0.08);
+
+  --font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  --weight-regular: 400;
+  --weight-strong: 600;
+  --type-title: var(--weight-strong) 17px / 1.24 var(--font-family);
+  --type-title-tracking: -0.374px;
+  --type-body: var(--weight-regular) 15px / 1.6 var(--font-family);
+  --type-label: var(--weight-regular) 14px / 1.43 var(--font-family);
+  --type-label-tracking: -0.224px;
+  --type-caption: var(--weight-regular) 12px / 1.5 var(--font-family);
+  --type-caption-tracking: -0.12px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 17px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --radius-toolbar-button: 8px;
+  --radius-block: 18px;
+  --radius-pill: 9999px;
+  --press-scale: scale(0.95);
+  --shadow-page: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+
+  --toolbar-h: 44px;
+  --toolbar-inset-left: 78px;
+  --viewer-min-w: 440px;
+  --page-gap: 12px;
+  --target-min: 24px;
+  --target-default: 28px;
+  --focus-ring-w: 2px;
+  --focus-ring-offset: 2px;
+  --z-floating: 20;
+  --z-overlay: 10;
+  --panel-header-h: 40px;
+  --divider-w: 1px;
+  --divider-hit-w: 8px;
+  --composer-min-h: 64px;
+  --composer-max-h: 160px;
+  --chip-h: 52px;
+  --chip-thumb: 44px;
+  --status-dot: 8px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root,
+.app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background: var(--color-bg-app);
+  color: var(--color-text-primary);
+  font: var(--type-label);
+  letter-spacing: var(--type-label-tracking);
+  word-break: keep-all;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  min-width: var(--target-default);
+  height: var(--target-default);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-toolbar-button);
+  background: var(--color-bg-input);
+  color: var(--color-accent);
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+button:active:not(:disabled) {
+  transform: var(--press-scale);
+}
+
+button:disabled {
+  color: var(--color-text-secondary);
+  opacity: 0.4;
+}
+
+button[aria-pressed='true'] {
+  border-color: var(--color-accent);
+}
+
+:focus-visible {
+  outline: var(--focus-ring-w) solid var(--color-focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* 도구 막대: 빈 곳을 끌어 창을 옮긴다. 폭이 모자라면 파일명만 줄어든다. */
+.toolbar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--toolbar-h);
+  padding: 0 var(--space-3) 0 var(--toolbar-inset-left);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  app-region: drag;
+  user-select: none;
+}
+
+.toolbar-file {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: var(--weight-strong);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toolbar-group,
+.toolbar-badge {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  app-region: no-drag;
+}
+
+.toolbar-badge {
+  padding: 2px var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-toolbar-button);
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.toolbar-page {
+  width: 48px;
+  height: var(--target-default);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-toolbar-button);
+  background: var(--color-bg-input);
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: center;
+}
+
+.toolbar-count {
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.toolbar-scale {
+  min-width: 44px;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* 뷰어와 튜터 패널이 나란히 놓이는 줄. */
+.workspace {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.viewer {
+  position: relative;
+  flex: 1 1 0;
+  min-width: var(--viewer-min-w);
+  background: var(--color-bg-viewer);
+}
+
+.viewer[data-dragging='pdf'] {
+  outline: var(--focus-ring-w) solid var(--color-accent);
+  outline-offset: calc(-1 * var(--focus-ring-w));
+}
+
+/* PDFViewer는 스크롤 컨테이너가 absolute이기를 요구한다. */
+.viewer-scroll {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  outline-offset: calc(-1 * var(--focus-ring-w));
+}
+
+.viewer-scroll[data-quiet-focus]:focus-visible {
+  outline: none;
+}
+
+/* pdf.js 기본 값을 계약의 쪽 간격으로 덮어쓴다. 쪽 색은 원본 그대로 둔다. */
+.viewer-scroll .pdfViewer {
+  --page-margin: 0 auto var(--page-gap);
+  --page-border: 0 solid transparent;
+  padding: var(--space-3) 0 0;
+}
+
+.viewer-scroll .pdfViewer .page {
+  box-shadow: var(--shadow-page);
+}
+
+.viewer-scroll .textLayer ::selection {
+  background: var(--color-page-selection-fill);
+}
+
+/* 복사 금지 문서는 선택 자체를 막는다. */
+.viewer-scroll.copy-restricted .textLayer,
+.viewer-scroll.copy-restricted .textLayer * {
+  cursor: default;
+  user-select: none;
+}
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-6);
+  text-align: center;
+}
+
+.empty-state h1 {
+  margin: 0;
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+}
+
+.empty-state p {
+  margin: 0;
+}
+
+.empty-version {
+  min-height: 1.5em;
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+button.primary {
+  padding: 0 var(--space-4);
+  border-color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.viewer-notice,
+.viewer-progress {
+  position: absolute;
+  top: var(--space-3);
+  left: 50%;
+  z-index: var(--z-floating);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(100% - var(--space-6));
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-toolbar-button);
+  background: var(--color-bg-elevated);
+  transform: translateX(-50%);
+}
+
+.viewer-notice span {
+  overflow-wrap: anywhere;
+}
+
+/* 오류 색은 아직 확정되지 않아(docs/design-tokens.md) 굵기로 구분한다. */
+.viewer-notice[data-kind='error'] {
+  font-weight: var(--weight-strong);
+}
+
+.viewer-notice button {
+  flex: none;
+  min-width: var(--target-min);
+  height: var(--target-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* 포인터 모양으로 드래그 결과를 예고한다(계약 5.1절). 링크는 링크 모양을 유지한다. */
+.viewer-scroll:not(.copy-restricted)[data-pointer='text'] .page,
+.viewer-scroll:not(.copy-restricted)[data-pointer='text'] .page *:not(a) {
+  cursor: text;
+}
+
+.viewer-scroll:not(.copy-restricted)[data-pointer='area'] .page,
+.viewer-scroll:not(.copy-restricted)[data-pointer='area'] .page *:not(a),
+.viewer-scroll:not(.copy-restricted)[data-alt] .page,
+.viewer-scroll:not(.copy-restricted)[data-alt] .page *:not(a),
+.viewer-scroll:not(.copy-restricted)[data-area-mode] .page,
+.viewer-scroll:not(.copy-restricted)[data-area-mode] .page * {
+  cursor: crosshair;
+}
+
+/* 끝난 선택은 앱이 그린 표시만 보인다. 브라우저 선택 색까지 겹치면 진해진다. */
+.viewer-scroll:not([data-selecting]) .textLayer ::selection {
+  background: transparent;
+}
+
+.viewer-scroll[data-live-resize] .selection-overlay {
+  visibility: hidden;
+}
+
+.selection-overlay {
+  position: absolute;
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+
+.selection-area,
+.selection-text,
+.area-draft {
+  position: absolute;
+  background: var(--color-page-selection-fill);
+}
+
+.selection-area,
+.area-draft {
+  border: 1px solid var(--color-page-selection-border);
+}
+
+.area-draft {
+  z-index: var(--z-overlay);
+  pointer-events: none;
+}
+
+.selection-ask {
+  position: absolute;
+  margin-top: var(--space-1);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+/* 도구 막대 오른쪽 끝: 영역 선택과 패널. */
+.toolbar-end {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  app-region: no-drag;
+}
+
+.toolbar-area[aria-pressed='true'] {
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+  color: var(--color-text-on-accent);
+}
+
+.toolbar-panel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.status-dot {
+  width: var(--status-dot);
+  height: var(--status-dot);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+/* 보이는 선은 1px, 잡는 영역은 8px. */
+.panel-divider {
+  position: relative;
+  flex: none;
+  width: var(--divider-w);
+  background: var(--color-border);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.panel-divider::before {
+  position: absolute;
+  inset: 0 calc((var(--divider-w) - var(--divider-hit-w)) / 2);
+  z-index: var(--z-overlay);
+  content: '';
+}
+
+.tutor-panel {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--color-bg-panel);
+}
+
+.tutor-panel[hidden] {
+  display: none;
+}
+
+.tutor-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: var(--panel-header-h);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tutor-head h2 {
+  margin: 0;
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+}
+
+.tutor-fake-banner {
+  flex: none;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+  font: var(--type-caption);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.tutor-conversation {
+  flex: 1 1 0;
+  min-height: 0;
+  padding: var(--space-3);
+  overflow: hidden auto;
+  overflow-wrap: anywhere;
+}
+
+.tutor-empty,
+.tutor-blocked {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.tutor-blocked,
+.tutor-failed {
+  font-weight: var(--weight-strong);
+}
+
+.tutor-failed {
+  margin: 0;
+  font-size: inherit;
+}
+
+.tutor-jump {
+  flex: none;
+  align-self: center;
+  margin: var(--space-1) 0;
+  border-radius: var(--radius-pill);
+}
+
+.turn {
+  margin-bottom: var(--space-5);
+  font: var(--type-body);
+}
+
+.turn-question {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-block);
+  background: var(--color-bg-app);
+  white-space: pre-wrap;
+}
+
+.turn-meta,
+.turn-summary,
+.turn-fake-label {
+  margin: var(--space-1) 0 var(--space-2);
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.turn-fake-label {
+  font-weight: var(--weight-strong);
+}
+
+.turn-paragraph {
+  margin: 0 0 var(--space-3);
+  white-space: pre-wrap;
+}
+
+.turn-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font: var(--type-label);
+}
+
+.turn-previous {
+  margin: var(--space-2) 0;
+  color: var(--color-text-secondary);
+}
+
+.turn-previous summary {
+  font: var(--type-caption);
+  cursor: default;
+}
+
+.recap {
+  margin: var(--space-2) 0 var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-block);
+  background: var(--color-bg-elevated);
+}
+
+.recap p {
+  margin: 0 0 var(--space-2);
+}
+
+.recap-label {
+  margin-bottom: var(--space-1);
+  font: var(--type-caption);
+  font-weight: var(--weight-strong);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.recap-uncertain {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.recap button {
+  font: var(--type-label);
+}
+
+.correction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.source-page {
+  height: auto;
+  padding: 0 var(--space-2);
+  border-color: var(--color-accent);
+  border-radius: var(--radius-pill);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+
+.source-link {
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-decoration: underline;
+}
+
+/* 근거 라벨과 글자와 모양을 모두 다르게 한다. 누를 수 없다. */
+.source-general {
+  padding: 0 var(--space-2);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-toolbar-button);
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+  white-space: nowrap;
+}
+
+.tutor-input {
+  position: relative;
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+.scope {
+  color: var(--color-text-secondary);
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.scope-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.scope-value {
+  color: var(--color-text-primary);
+  font-weight: var(--weight-strong);
+  animation: scope-changed 900ms ease-out;
+}
+
+@keyframes scope-changed {
+  from {
+    background: var(--color-page-selection-fill);
+    outline: 2px solid var(--color-page-selection-fill);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scope-value {
+    animation: none;
+  }
+}
+
+.scope-notice {
+  color: var(--color-text-primary);
+  font-weight: var(--weight-strong);
+}
+
+.scope-toggle {
+  flex: none;
+  min-width: 0;
+  height: var(--target-min);
+  font: var(--type-caption);
+}
+
+/* 위로 열리는 팝오버. 그림자는 PDF 쪽에만 쓰므로 테두리로 구분한다. */
+.scope-details {
+  position: absolute;
+  right: var(--space-3);
+  bottom: 100%;
+  left: var(--space-3);
+  z-index: var(--z-floating);
+  max-height: 50vh;
+  padding: var(--space-3);
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-block);
+  background: var(--color-bg-panel);
+}
+
+.scope-details p {
+  margin: 0 0 var(--space-1);
+}
+
+.scope-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.selection-chip {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--chip-h);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-toolbar-button);
+  background: var(--color-bg-input);
+}
+
+.selection-chip-thumb {
+  width: var(--chip-thumb);
+  height: var(--chip-thumb);
+  object-fit: contain;
+}
+
+.selection-chip-body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+  font: var(--type-caption);
+  letter-spacing: var(--type-caption-tracking);
+}
+
+.selection-chip-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.selection-chip-meta {
+  color: var(--color-text-secondary);
+}
+
+.selection-chip-clear {
+  flex: none;
+  min-width: var(--target-min);
+  height: var(--target-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.composer {
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--composer-min-h);
+  max-height: var(--composer-max-h);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-block);
+  background: var(--color-bg-input);
+  color: inherit;
+  font: var(--type-body);
+  field-sizing: content;
+  resize: none;
+}
+
+.composer:disabled {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-secondary);
+}
+
+/* 설정 창(docs/design-contract.md 4.5, 4.10절) */
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 100vh;
+  padding: var(--space-4);
+  background: var(--color-bg-panel);
+  color: var(--color-text-primary);
+  font: var(--type-label);
+}
+
+.settings h1 {
+  margin: 0;
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+}
+
+.settings p {
+  margin: 0;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.settings-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-right: var(--space-3);
+}
+
+.settings-row input:not([type='radio']) {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-bg-input);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.settings-message {
+  font-weight: var(--weight-strong);
+}
+
+/* 답변 서식과 수식(docs/design-contract.md 4.6절) */
+.turn-paragraph ul,
+.turn-paragraph ol,
+.recap-body ul,
+.recap-body ol {
+  margin: var(--space-1) 0;
+  padding-left: var(--space-4);
+  white-space: normal;
+}
+
+.recap-body {
+  margin: 0 0 var(--space-2);
+  white-space: pre-wrap;
+}
+
+.answer-heading {
+  display: block;
+  margin-bottom: var(--space-1);
+}
+
+.answer-code {
+  margin: var(--space-1) 0;
+  padding: var(--space-2);
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-toolbar-button);
+  background: var(--color-bg-elevated);
+  white-space: pre;
+}
+
+/* macOS 기본 수식 글꼴을 먼저 쓴다. */
+.tutor-panel math {
+  font-family: 'STIX Two Math', 'Cambria Math', math;
+}
+
+/* 넓은 수식은 수식만 가로로 스크롤한다. */
+.math-display {
+  display: block;
+  margin: var(--space-2) 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: normal;
+}
+
+.math-pending,
+.math-failed {
+  color: var(--color-text-secondary);
+}
+
+/* 문서 진단 배너: 쪽을 가리지 않고 뷰어 영역을 민다(계약 4.4절). */
+.viewer {
+  display: flex;
+  flex-direction: column;
+}
+
+.viewer-stage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.viewer-banner {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg-elevated);
+}
+
+/* 시작 화면의 최근 문서 */
+.recent-documents {
+  width: min(420px, 100%);
+  margin-top: var(--space-4);
+  text-align: left;
+}
+
+.recent-documents h2 {
+  margin: 0 0 var(--space-2);
+  font: var(--type-title);
+  letter-spacing: var(--type-title-tracking);
+}
+
+.recent-documents ul {
+  /* 작은 창에서도 [PDF 열기]가 밀려나지 않게 목록만 스크롤한다. */
+  overflow-y: auto;
+  max-height: 40vh;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recent-documents li + li {
+  margin-top: var(--space-1);
+}
+
+.recent-documents button {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  text-align: left;
+}
+
+.recent-name {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-date {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
+.tutor-settings {
+  margin-left: auto;
+}

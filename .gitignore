@@ -1,0 +1,27 @@
+# Dependencies and build output
+# node_modules는 iCloud 동기화를 피하려고 deps.nosync/ 아래 실물을 가리키는 심볼릭 링크일 수 있다.
+node_modules
+*.nosync/
+dist/
+out/
+release/
+coverage/
+test-results/
+playwright-report/
+
+# Secrets: API keys must never be committed
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+
+# PDFs may be copyrighted. Only documents confirmed as redistributable go in evals/public/
+*.pdf
+!evals/public/**/*.pdf
+
+# Local machine files
+.DS_Store
+.claude/settings.local.json
+*.log
