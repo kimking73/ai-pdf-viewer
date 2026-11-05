@@ -25,7 +25,20 @@
 - **로컬 데이터:** 최근 문서 경로는 앱 데이터 폴더의 `recent-documents.json`에 암호화 없이 저장합니다(권한 `0600`).
 - **프로세스 격리:** 렌더러를 비신뢰 영역으로 보고 `contextIsolation`과 `sandbox`를 켜고 `nodeIntegration`을 끕니다. IPC는 좁은 동작 단위로 나누고 zod로 검증합니다.
 
-## 시작하기
+## 다운로드
+
+**[Apple Silicon용 DMG 다운로드](https://github.com/kimking73/ai-pdf-viewer/releases/latest/download/AI-PDF-Viewer-arm64.dmg)**. Intel Mac에서는 실행되지 않습니다.
+
+1. DMG를 열어 앱을 `Applications`로 끌어 넣습니다.
+2. 앱에 Developer ID 서명과 공증이 없어서 macOS가 실행을 막고, 손상되었다고 표시할 수 있습니다. 이 빌드를 믿는다면 터미널에서 다운로드 표시를 한 번 지웁니다.
+
+   ```sh
+   xattr -cr "/Applications/AI PDF Viewer.app"
+   ```
+
+3. 앱을 열고 `⌘,`를 눌러 OpenAI를 고른 뒤 API 키를 저장합니다.
+
+## 소스에서 빌드하기
 
 macOS, Node.js, OpenAI API 키가 필요합니다. Apple Silicon과 Node.js 26에서 개발하고 시험했습니다.
 

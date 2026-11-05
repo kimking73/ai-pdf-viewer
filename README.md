@@ -25,7 +25,20 @@ This is a personal project. It runs on your own API key, with no backend server.
 - **Local data:** recent document paths are stored unencrypted in `recent-documents.json` in the app's data folder, with `0600` permissions.
 - **Process isolation:** the renderer is treated as untrusted, with `contextIsolation` and `sandbox` on and `nodeIntegration` off. IPC is limited to narrow operations validated with zod.
 
-## Getting started
+## Download
+
+**[Download the DMG for Apple Silicon](https://github.com/kimking73/ai-pdf-viewer/releases/latest/download/AI-PDF-Viewer-arm64.dmg)**. It does not run on Intel Macs.
+
+1. Open the DMG and drag the app to `Applications`.
+2. The app is not signed with a Developer ID or notarized, so macOS blocks it and may say it is damaged. If you trust this build, remove the download flag once in Terminal:
+
+   ```sh
+   xattr -cr "/Applications/AI PDF Viewer.app"
+   ```
+
+3. Open the app, press `⌘,`, choose OpenAI, and save your API key.
+
+## Build from source
 
 You need macOS, Node.js, and an OpenAI API key. The project was developed and tested on Apple Silicon with Node.js 26.
 
