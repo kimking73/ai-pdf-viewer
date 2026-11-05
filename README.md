@@ -112,4 +112,4 @@ Project documents are in Korean: [architecture](docs/architecture.md), [decision
 
 ## License
 
-No license has been chosen yet, so no rights to reuse the code are granted.
+[MIT](LICENSE)
